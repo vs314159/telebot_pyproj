@@ -20,9 +20,9 @@ async def start(inp):
 @dp.callback_query_handler()
 async def answer(callback: types.CallbackQuery):
     call = callback.data
-    msg = info_dict.get(call)
+    msg = info_dict.get(call) # !
     next_calls = relations.get(call)
-    msg = msg.message
+    msg = msg.message # !
     if next_calls is not None:
         options = {info_dict[nxt_opt].btn_name: nxt_opt for nxt_opt in next_calls}
         inl_kb = inl_keyboard(options)
