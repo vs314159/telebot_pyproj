@@ -30,6 +30,7 @@ async def start(message):
 
 @dp.callback_query_handler(state='*')
 async def answer(callback: types.CallbackQuery):
+    #print(callback)
     call = callback.data
     msg, next_calls, back_opt = get_info(call)
     inl_kb = inl_keyboard(next_calls, back_opt)
@@ -42,12 +43,15 @@ async def answer(callback: types.CallbackQuery):
 @dp.message_handler(state=UserData.name)
 async def name(message, state):
     inp_name = message.text.title()
-    await state.update_data(name=name)
+    await message.delete()
+    await state.update_data(name=inp_name)
+    await state.finish()
     # пізніше додати превірку чи є таке ім'я в базі
     call = 'auth_done'
     msg, next_calls, back_opt = get_info(call)
     inl_kb = inl_keyboard(next_calls, back_opt)
     await message.answer(msg, reply_markup=inl_kb)
+
 
 
 if __name__ == "__main__":
