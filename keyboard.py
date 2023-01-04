@@ -22,4 +22,3 @@ def get_info(call):
     next_calls = info.next_calls
     back_opt = info.back_opt
     return msg, next_calls, back_opt
-
