@@ -36,6 +36,8 @@ async def delete_user_msg(message):
 
 # змінні для костиля
 chat_id, msg_id = None, None
+
+
 @dp.callback_query_handler(state='*')
 async def answer(callback: types.CallbackQuery, state):
     call = callback.data
@@ -62,15 +64,15 @@ async def answer(callback: types.CallbackQuery, state):
 async def name(message, state):
     inp_name = message.text.title()
     await state.update_data(name=inp_name)
+    await state.finish()
     await bot.delete_message(chat_id, msg_id)
     await message.delete()
     # пізніше додати превірку чи є таке ім'я в базі
     call = 'auth_done'
     msg, next_calls, back_opt = get_info(call)
     inl_kb = inl_keyboard(next_calls, back_opt)
-    await state.finish()
-    await message.answer(msg + f'{inp_name}!', reply_markup=inl_kb)
 
+    await message.answer(msg + f'{inp_name}!', reply_markup=inl_kb)
 
 
 if __name__ == "__main__":
