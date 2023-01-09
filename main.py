@@ -51,7 +51,6 @@ async def answer(callback: types.CallbackQuery, state):
         case 'price':
             price_file = 'prices.PNG' # можливо, замінити на посилання, а не файл з цінами
             photo = await bot.send_photo(callback.from_user.id, photo=open(price_file, 'rb'))
-            await state.update_data(photo=photo)
     await callback.message.delete()
 
 
