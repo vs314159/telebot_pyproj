@@ -17,11 +17,13 @@ dp = Dispatcher(bot=bot, storage=storage)
 
 class UserData(StatesGroup):
     name = State()
-    contacts = State()
+    # contacts = State()
+
 
 
 @dp.message_handler(commands=['start'])
-async def start(message):
+async def start(message, state):
+    await state.finish()
     msg, next_calls, back_opt = get_info('/start')
     inl_kb = inl_keyboard(next_calls, back_opt)
     await message.answer(text=msg, reply_markup=inl_kb)
@@ -34,10 +36,6 @@ async def delete_user_msg(message):
     await message.delete()
 
 
-# змінні для костиля
-chat_id, msg_id = None, None
-
-
 @dp.callback_query_handler(state='*')
 async def answer(callback: types.CallbackQuery, state):
     call = callback.data
@@ -46,17 +44,14 @@ async def answer(callback: types.CallbackQuery, state):
     answ = await bot.send_message(callback.from_user.id, msg, reply_markup=inl_kb)
     match call:
         case 'auth':
-            # скоріше це костиль, але поки так можна вмдалити повідомлення
-            global chat_id
-            chat_id = answ.chat.id
-            global msg_id
-            msg_id = answ.message_id
             await UserData.name.set()
+            await state.update_data(chat_id=answ.chat.id, msg_id=answ.message_id)
         case 'student':
             await state.finish()  # користувач не захотів вводити ім'я
         case 'price':
-            price_file = 'https://t1.ua/photos/articles/2017/12/10416_1_1097.jpg'  # змінити на посилання на ціни
-            await bot.send_photo(callback.from_user.id, price_file)
+            price_file = 'prices.PNG' # можливо, замінити на посилання, а не файл з цінами
+            photo = await bot.send_photo(callback.from_user.id, photo=open(price_file, 'rb'))
+            await state.update_data(photo=photo)
     await callback.message.delete()
 
 
@@ -64,15 +59,15 @@ async def answer(callback: types.CallbackQuery, state):
 async def name(message, state):
     inp_name = message.text.title()
     await state.update_data(name=inp_name)
+    data = await state.get_data()
     await state.finish()
-    await bot.delete_message(chat_id, msg_id)
+    await bot.delete_message(data['chat_id'], data['msg_id'])
     await message.delete()
     # пізніше додати превірку чи є таке ім'я в базі
     call = 'auth_done'
     msg, next_calls, back_opt = get_info(call)
     inl_kb = inl_keyboard(next_calls, back_opt)
-
-    await message.answer(msg + f'{inp_name}!', reply_markup=inl_kb)
+    await message.answer(msg + f'{data["name"]}!', reply_markup=inl_kb)
 
 
 if __name__ == "__main__":
