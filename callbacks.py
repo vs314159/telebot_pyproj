@@ -2,6 +2,14 @@ from messages import Messages
 
 
 class CallbackInfo:
+    """
+    Клас, що містить інформацію про колбек
+    msg - повідомлення, що надсилатиметься, коли користувач натиснув інлайн-кнопку
+    btn_name - назва кнопки, натискання на яку і викликає даний колбек (міститься у 'попередньому' колбеці)
+    next_calls - інлайн-кнопки, що виведуться разом з msg
+    back_opt - колбек кнопки '< Назад', що виведеться разом з msg
+    url - посилання, яке може містити інлайн-кнопка
+    """
     def __init__(self, msg='⬇️', btn_name=None, next_calls=None, back_opt=None, url=None):
         self.msg = msg
         self.btn_name = btn_name
@@ -10,6 +18,7 @@ class CallbackInfo:
         self.url = url
 
 
+# Словник з усіма колбеками
 msgs = Messages()
 callback_info = {
     '/start': CallbackInfo(msg=msgs.start,
@@ -54,9 +63,16 @@ callback_info = {
                               next_calls=('price', 'guest_format', 'test_level'),
                               back_opt='/start',
                               ),
-            'price': CallbackInfo(btn_name='Ціна навчання',
+            'price': CallbackInfo(msg=msgs.price,
+                                  btn_name='Ціна навчання',
+                                  next_calls=('more_prices',),
                                   back_opt='guest',
                                   ),
+                'more_prices': CallbackInfo(msg=msgs.price,
+                                            btn_name='Далі >',
+                                            next_calls=('more_prices',),
+                                            back_opt='guest',
+                                            ),
             'guest_format': CallbackInfo(msg=msgs.guest_format,
                                          btn_name='Формат навчання',
                                          next_calls=('guest_solo', 'guest_duet', 'guest_group'),
@@ -78,7 +94,7 @@ callback_info = {
                                             back_opt='guest_format',
                                             ),
                     'trial': CallbackInfo(btn_name='Записатись на пробне заняття✍️',
-                                          url='www.google.com',
+                                          url='www.google.com',  # змінити на введення даних, а не посилання
                                           back_opt='guest_format',
                                           ),
             'test_level': CallbackInfo(btn_name='Дізнатись свій рівень англійської',
