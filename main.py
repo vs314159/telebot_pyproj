@@ -1,21 +1,13 @@
-from aiogram import Bot, Dispatcher, executor, types
-
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram import executor, types
 from aiogram.dispatcher.filters.state import StatesGroup, State
 
 from keyboard import inl_keyboard, get_info
+from quiz import go_handler, answer_handler
 
-from dotenv import load_dotenv
-import os
+from setting import bot, dp
+from setting import price_files
 
-load_dotenv()
 
-storage = MemoryStorage()
-bot = Bot(token=os.environ["TOKEN"])
-dp = Dispatcher(bot=bot, storage=storage)
-
-price_files = os.listdir('price_images')
-price_files = tuple(map(lambda x: 'price_images/' + x, price_files))
 class UserData(StatesGroup):
     """
     Клас, що необхідний для отримання даних введених у боті користувачем
@@ -52,9 +44,14 @@ async def answer(callback: types.CallbackQuery, state):
     натискання яких створює нові колбеки, які ця функція знову оброблює
     """
     call = callback.data
-    msg, next_calls, back_opt = get_info(call)
-    inl_kb = inl_keyboard(next_calls, back_opt)
-    if call not in ('price', 'more_prices'):
+    if '{' not in call:
+        msg, next_calls, back_opt = get_info(call)
+        inl_kb = inl_keyboard(next_calls, back_opt)
+    else:
+        await answer_handler(callback)
+        return
+
+    if call not in ('price', 'more_prices', 'test_level_start'):
         answ = await bot.send_message(callback.from_user.id, msg, reply_markup=inl_kb)
     match call:
         case 'auth':
@@ -77,6 +74,8 @@ async def answer(callback: types.CallbackQuery, state):
             photo = price_files[index]
             await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
             await state.update_data(index=index+1)
+        case 'test_level_start':
+            await go_handler(callback.from_user.id)
     await callback.message.delete()
 
 

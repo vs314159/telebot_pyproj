@@ -97,7 +97,16 @@ callback_info = {
                                           url='www.google.com',  # змінити на введення даних, а не посилання
                                           back_opt='guest_format',
                                           ),
-            'test_level': CallbackInfo(btn_name='Дізнатись свій рівень англійської',
+            'test_level': CallbackInfo(msg=msgs.test_level,
+                                       btn_name='Дізнатись свій рівень англійської',
+                                       next_calls=('test_level_start',),
                                        back_opt='guest',
                                        ),
+                'test_level_start': CallbackInfo(btn_name='Почати',
+                                                 back_opt='guest',
+                                                 ),
+                'test_level_done': CallbackInfo(msg='Обговорити результати з нашими викладачами 👨‍🏫',
+                                                next_calls=('trial',),
+                                                back_opt='guest',
+                                                 ),
                  }
