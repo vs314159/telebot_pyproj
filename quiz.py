@@ -80,10 +80,17 @@ async def go_handler(message: Message):
     my_db.change_current_question(message.from_user.id, 0)
     my_db.change_questions_passed(message.from_user.id, 0)
 
+@dp.message_handler(commands=["finish"])
+async def quit_handler(message: Message):
+    if not my_db.is_in_process(message.from_user.id):
+        await bot.send_message(message.from_user.id, "❗️Ви ще не почали тест\\.", parse_mode="MarkdownV2")
+        return
+    reset(message.from_user.id)
+    await bot.send_message(message.from_user.id, "✋🏼 Ви перервали виконання тесту\\.", parse_mode="MarkdownV2")
 
 @dp.message_handler(commands=["start"])
 async def start(message: Message):
-    await message.answer( "🧠 *Пропонуємо перевірити Ваш рівень англійської\\.*\n\n📝 Потрібно  відповісти на 15 запитань\\. \n⏱ Тест займе близько 10 хвилин\\.\n\n*Почати тест* \\- /play", parse_mode="MarkdownV2")
+    await message.answer( "🧠 *Пропонуємо перевірити Ваш рівень англійської\\.*\n\n📝 Потрібно  відповісти на 15 запитань\\. \n⏱ Тест займе близько 10 хвилин\\.\n\n*Почати тест* \\- /play\n*Припинити проходження тесту* \\- /finish", parse_mode="MarkdownV2")
 
 
 
