@@ -50,7 +50,7 @@ async def answer_handler(callback: CallbackQuery):
         await bot.delete_message(callback.from_user.id, msg)
         await bot.send_message(
             callback.from_user.id,
-            f"🎉 Ура, ви пройшли це випробування! \n\n🔒 Ваш рівень англійської - (ще треба прописати). \n✅ Правильних відповідей: {passed} з {len(questions)}."
+            f"🎉 Ура, ви пройшли це випробування! \n\n✅ Правильних відповідей: {passed} з {len(questions)}."
         )
         return
     await bot.edit_message_text(
