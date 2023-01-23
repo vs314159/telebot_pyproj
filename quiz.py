@@ -25,7 +25,7 @@ async def answer_handler(callback: CallbackQuery):
     if is_correct:
         passed += 1
         my_db.change_questions_passed(callback.from_user.id, passed)
-    if q + 1 > len(questions) - 1:
+    if q + 1 == 3: #> len(questions) - 1: для тест
         reset(callback.from_user.id)
         await bot.delete_message(callback.from_user.id, msg)
         ## додаю клавіатуру
@@ -38,24 +38,25 @@ async def answer_handler(callback: CallbackQuery):
         await bot.send_message(
             callback.from_user.id,
             msg_result + '\n' + msg,
-            reply_markup= inl_kb
+            reply_markup=inl_kb
         )
-        return
-    await bot.edit_message_text(
-        questions[q + 1]["text"],
-        callback.from_user.id,
-        msg,
-        reply_markup=compose_markup(q + 1),
-        parse_mode="MarkdownV2"
-    )
+    else:
+        await bot.edit_message_text(
+            questions[q + 1]["text"],
+            callback.from_user.id,
+            msg,
+            reply_markup=compose_markup(q + 1),
+            parse_mode="MarkdownV2"
+        )
 
 
 async def go_handler(user_id):
     if not my_db.is_exists(user_id):
         my_db.add(user_id)
     if my_db.is_in_process(user_id):
-        await bot.send_message(user_id, "🚫 Ви не можете почати тест, тому що *ви вже його проходите*\\.", parse_mode="MarkdownV2")
-        return
+        reset(user_id)
+        #await bot.send_message(user_id, "🚫 Ви не можете почати тест, тому що *ви вже його проходите*\\.", parse_mode="MarkdownV2")
+        #return
     my_db.set_in_process(user_id, True)
     msg = await bot.send_message(
         user_id,

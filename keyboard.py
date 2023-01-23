@@ -36,7 +36,7 @@ def inl_keyboard(next_calls: tuple[str] = None, back_opt: str = None) -> InlineK
                for call, opt in options.items())
     kb = InlineKeyboardMarkup(row_width=1).add(*buttons)
     if back_opt is not None:
-        kb.add(InlineKeyboardButton(text='< Назад', callback_data=back_opt))
+        kb.add(InlineKeyboardButton(text='< Назад', callback_data='<' + back_opt))
     return kb
 
 

@@ -44,27 +44,36 @@ async def answer(callback: types.CallbackQuery, state):
     натискання яких створює нові колбеки, які ця функція знову оброблює
     """
     call = callback.data
+    prev_call = await state.get_data()
+    if prev_call:
+        prev_call = prev_call['prev_call']
     if '{' not in call:
+        back = call.startswith('<')
+        call = call.lstrip('<')
         msg, next_calls, back_opt = get_info(call)
         inl_kb = inl_keyboard(next_calls, back_opt)
     else:
         await answer_handler(callback)
         return
-
     if call not in ('price', 'more_prices', 'test_level_start'):
-        answ = await bot.send_message(callback.from_user.id, msg, reply_markup=inl_kb)
+        await bot.send_message(callback.from_user.id, msg, reply_markup=inl_kb)
     match call:
-        case 'auth':
+        case 'remains':
             #  Очікування ПІ від користувача, після чого
             #  перехід до функції process_name
             await UserData.name.set()
-            await state.update_data(chat_id=answ.chat.id, msg_id=answ.message_id)
         case 'student':
             await state.finish()  # користувач не захотів вводити ім'я
         case 'price':
-            photo = price_files[0]
-            await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
-            await state.update_data(index=1)
+            if len(price_files) in (0, 1):
+                inl_kb = inl_keyboard(None, back_opt)  # Прибираємо кнопку '> Далі'
+            if len(price_files) > 0:
+                photo = price_files[0]
+                await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
+                await state.update_data(index=len(price_files) > 1)
+            else:
+                no_prices_msg = 'На жаль, на разі немає зображень з цінами 🥺'  # Якщо папка price_images порожня
+                await bot.send_message(callback.from_user.id, no_prices_msg, reply_markup=inl_kb)
         case 'more_prices':
             data = await state.get_data()
             index = data['index']
@@ -76,7 +85,13 @@ async def answer(callback: types.CallbackQuery, state):
             await state.update_data(index=index+1)
         case 'test_level_start':
             await go_handler(callback.from_user.id)
-    await callback.message.delete()
+    leave_msgs = ('price', 'more_prices', 'guest_solo',
+                  'guest_duet', 'guest_group', 'test_level_start',)  # останнє збереже результати test_level_done
+    if prev_call in leave_msgs and back:
+        await callback.message.edit_reply_markup(None)
+    else:
+        await callback.message.delete()
+    await state.update_data(prev_call=call)
 
 
 @dp.message_handler(state=UserData.name)
@@ -86,17 +101,9 @@ async def process_name(message, state):
     """
     inp_name = message.text.title()
     await state.update_data(name=inp_name)
-    data = await state.get_data()
     await state.finish()
-    await bot.delete_message(data['chat_id'], data['msg_id'])
-    await message.delete()
     # пізніше додати превірку чи є таке ім'я в базі
     # . . .
-    # Створення повідомлення з інлайн-кнопками після успішної авторизації
-    call = 'auth_done'
-    msg, next_calls, back_opt = get_info(call)
-    inl_kb = inl_keyboard(next_calls, back_opt)
-    await message.answer(msg + f'{data["name"]}!', reply_markup=inl_kb)
 
 
 if __name__ == "__main__":
