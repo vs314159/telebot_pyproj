@@ -21,13 +21,13 @@ class CallbackInfo:
 # Словник з усіма колбеками
 msgs = Messages()
 callback_info = {
-    '/start': CallbackInfo(msg=msgs.start,
+    'start': CallbackInfo(msg=msgs.start,
                            next_calls=('student', 'guest')
                            ),
         'student': CallbackInfo(msg=msgs.student,
                                 btn_name='Студент🎓',
                                 next_calls=('feedback', 'payment', 'remains'),
-                                back_opt='/start',
+                                back_opt='start',
                                 ),
             'feedback': CallbackInfo(msg=msgs.feedback,
                                      btn_name='Анонімний відгук про навчання📝',
@@ -55,7 +55,7 @@ callback_info = {
         'guest': CallbackInfo(msg=msgs.guest,
                               btn_name='Хочу навчатись!🤓',
                               next_calls=('price', 'guest_format', 'test_level'),
-                              back_opt='/start',
+                              back_opt='start',
                               ),
             'price': CallbackInfo(msg=msgs.price,
                                   btn_name='Ціна навчання',

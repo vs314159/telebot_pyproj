@@ -17,16 +17,33 @@ class UserData(StatesGroup):
     # contacts = State()
 
 
-@dp.message_handler(commands=['start'])
+async def commands_list_menu(_):
+    menu_commands = [types.BotCommand("/start", "Почати роботу бота ▶️"),
+                     types.BotCommand("/test_level", "Пройти тест на знання англійської 👨‍🏫"),
+                     types.BotCommand("/guest_format", "Вартість і способи навчання 💰"),
+                     ]
+    await bot.set_my_commands(menu_commands)
+
+
+@dp.message_handler(commands=['start', 'test_level', 'guest_format'])
 async def start(message, state):
     """
-    Обробка команди '/start'
+    Обробка основних команд
+
     """
+    data = await state.get_data()
+    if data.get('chat_id', None):
+        await bot.edit_message_reply_markup(chat_id=data['chat_id'],
+                                            message_id=data['msg_id'],
+                                            reply_markup=None)
     await state.finish()
-    msg, next_calls, back_opt = get_info('/start')
+    command = message.text[1:]
+    msg, next_calls, back_opt = get_info(command)
     inl_kb = inl_keyboard(next_calls, back_opt)
-    await message.answer(text=msg, reply_markup=inl_kb)
-    await message.delete()
+    answ = await message.answer(text=msg, reply_markup=inl_kb)
+    # Коли користувач натисне ще одну команду - повідомлення,
+    # що надсилалося попередньою командою, позбудеться інлайн кнопок
+    await state.update_data(chat_id=answ.chat.id, msg_id=answ.message_id)
 
 
 @dp.message_handler()
@@ -45,8 +62,7 @@ async def answer(callback: types.CallbackQuery, state):
     """
     call = callback.data
     prev_call = await state.get_data()
-    if prev_call:
-        prev_call = prev_call['prev_call']
+    prev_call = prev_call.get('prev_call', None)
     if '{' not in call:
         back = call.startswith('<')
         call = call.lstrip('<')
@@ -82,7 +98,7 @@ async def answer(callback: types.CallbackQuery, state):
                 index = 0
             photo = price_files[index]
             await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
-            await state.update_data(index=index+1)
+            await state.update_data(index=index + 1)
         case 'test_level_start':
             await go_handler(callback.from_user.id)
     leave_msgs = ('price', 'more_prices', 'guest_solo',
@@ -107,4 +123,4 @@ async def process_name(message, state):
 
 
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+    executor.start_polling(dispatcher=dp, skip_updates=True, on_startup=commands_list_menu)
