@@ -1,5 +1,6 @@
 from aiogram import executor, types
 from aiogram.dispatcher.filters.state import StatesGroup, State
+from aiogram.utils.exceptions import MessageToEditNotFound
 
 from keyboard import inl_keyboard, get_info
 from quiz import go_handler, answer_handler
@@ -18,8 +19,8 @@ class UserData(StatesGroup):
 
 
 async def commands_list_menu(_):
-    menu_commands = [types.BotCommand("/start", "Почати роботу бота ▶️"),
-                     types.BotCommand("/test_level", "Пройти тест на знання англійської 👨‍🏫"),
+    menu_commands = [types.BotCommand("/start", "Початок роботи бота ▶️"),
+                     types.BotCommand("/test_level", "Тест на знання англійської 👨‍🏫"),
                      types.BotCommand("/guest_format", "Вартість і способи навчання 💰"),
                      ]
     await bot.set_my_commands(menu_commands)
@@ -33,9 +34,12 @@ async def start(message, state):
     """
     data = await state.get_data()
     if data.get('chat_id', None):
-        await bot.edit_message_reply_markup(chat_id=data['chat_id'],
-                                            message_id=data['msg_id'],
-                                            reply_markup=None)
+        try:
+            await bot.edit_message_reply_markup(chat_id=data['chat_id'],
+                                                message_id=data['msg_id'],
+                                                reply_markup=None)
+        except MessageToEditNotFound:
+            pass
     await state.finish()
     command = message.text[1:]
     msg, next_calls, back_opt = get_info(command)
@@ -72,7 +76,7 @@ async def answer(callback: types.CallbackQuery, state):
         await answer_handler(callback)
         return
     if call not in ('price', 'more_prices', 'test_level_start'):
-        await bot.send_message(callback.from_user.id, msg, reply_markup=inl_kb)
+        answ = await bot.send_message(callback.from_user.id, msg, reply_markup=inl_kb)
     match call:
         case 'remains':
             #  Очікування ПІ від користувача, після чого
@@ -85,11 +89,11 @@ async def answer(callback: types.CallbackQuery, state):
                 inl_kb = inl_keyboard(None, back_opt)  # Прибираємо кнопку '> Далі'
             if len(price_files) > 0:
                 photo = price_files[0]
-                await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
+                answ = await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
                 await state.update_data(index=len(price_files) > 1)
             else:
                 no_prices_msg = 'На жаль, на разі немає зображень з цінами 🥺'  # Якщо папка price_images порожня
-                await bot.send_message(callback.from_user.id, no_prices_msg, reply_markup=inl_kb)
+                answ = await bot.send_message(callback.from_user.id, no_prices_msg, reply_markup=inl_kb)
         case 'more_prices':
             data = await state.get_data()
             index = data['index']
@@ -97,7 +101,7 @@ async def answer(callback: types.CallbackQuery, state):
                 msg += '(Ви проглянули всі)'
                 index = 0
             photo = price_files[index]
-            await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
+            answ = await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
             await state.update_data(index=index + 1)
         case 'test_level_start':
             await go_handler(callback.from_user.id)
@@ -108,6 +112,10 @@ async def answer(callback: types.CallbackQuery, state):
     else:
         await callback.message.delete()
     await state.update_data(prev_call=call)
+    try:
+        await state.update_data(chat_id=answ.chat.id, msg_id=answ.message_id)
+    except UnboundLocalError:
+        pass
 
 
 @dp.message_handler(state=UserData.name)
