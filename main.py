@@ -1,21 +1,14 @@
-from aiogram import Bot, Dispatcher, executor, types
-
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram import executor, types
 from aiogram.dispatcher.filters.state import StatesGroup, State
+from aiogram.utils.exceptions import MessageToEditNotFound
 
 from keyboard import inl_keyboard, get_info
+from quiz import go_handler, answer_handler
 
-from dotenv import load_dotenv
-import os
+from setting import bot, dp
+from setting import price_files
 
-load_dotenv()
 
-storage = MemoryStorage()
-bot = Bot(token=os.environ["TOKEN"])
-dp = Dispatcher(bot=bot, storage=storage)
-
-price_files = os.listdir('price_images')
-price_files = tuple(map(lambda x: 'price_images/' + x, price_files))
 class UserData(StatesGroup):
     """
     Клас, що необхідний для отримання даних введених у боті користувачем
@@ -25,16 +18,36 @@ class UserData(StatesGroup):
     # contacts = State()
 
 
-@dp.message_handler(commands=['start'])
+async def commands_list_menu(_):
+    menu_commands = [types.BotCommand("/start", "Початок роботи бота ▶️"),
+                     types.BotCommand("/test_level", "Тест на знання англійської 👨‍🏫"),
+                     types.BotCommand("/guest_format", "Вартість і способи навчання 💰"),
+                     ]
+    await bot.set_my_commands(menu_commands)
+
+
+@dp.message_handler(commands=['start', 'test_level', 'guest_format'])
 async def start(message, state):
     """
-    Обробка команди '/start'
+    Обробка основних команд
+
     """
+    data = await state.get_data()
+    if data.get('chat_id', None):
+        try:
+            await bot.edit_message_reply_markup(chat_id=data['chat_id'],
+                                                message_id=data['msg_id'],
+                                                reply_markup=None)
+        except MessageToEditNotFound:
+            pass
     await state.finish()
-    msg, next_calls, back_opt = get_info('/start')
+    command = message.text[1:]
+    msg, next_calls, back_opt = get_info(command)
     inl_kb = inl_keyboard(next_calls, back_opt)
-    await message.answer(text=msg, reply_markup=inl_kb)
-    await message.delete()
+    answ = await message.answer(text=msg, reply_markup=inl_kb)
+    # Коли користувач натисне ще одну команду - повідомлення,
+    # що надсилалося попередньою командою, позбудеться інлайн кнопок
+    await state.update_data(chat_id=answ.chat.id, msg_id=answ.message_id)
 
 
 @dp.message_handler()
@@ -52,22 +65,35 @@ async def answer(callback: types.CallbackQuery, state):
     натискання яких створює нові колбеки, які ця функція знову оброблює
     """
     call = callback.data
-    msg, next_calls, back_opt = get_info(call)
-    inl_kb = inl_keyboard(next_calls, back_opt)
-    if call not in ('price', 'more_prices'):
+    prev_call = await state.get_data()
+    prev_call = prev_call.get('prev_call', None)
+    if '{' not in call:
+        back = call.startswith('<')
+        call = call.lstrip('<')
+        msg, next_calls, back_opt = get_info(call)
+        inl_kb = inl_keyboard(next_calls, back_opt)
+    else:
+        await answer_handler(callback)
+        return
+    if call not in ('price', 'more_prices', 'test_level_start'):
         answ = await bot.send_message(callback.from_user.id, msg, reply_markup=inl_kb)
     match call:
-        case 'auth':
+        case 'remains':
             #  Очікування ПІ від користувача, після чого
             #  перехід до функції process_name
             await UserData.name.set()
-            await state.update_data(chat_id=answ.chat.id, msg_id=answ.message_id)
         case 'student':
             await state.finish()  # користувач не захотів вводити ім'я
         case 'price':
-            photo = price_files[0]
-            await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
-            await state.update_data(index=1)
+            if len(price_files) in (0, 1):
+                inl_kb = inl_keyboard(None, back_opt)  # Прибираємо кнопку '> Далі'
+            if len(price_files) > 0:
+                photo = price_files[0]
+                answ = await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
+                await state.update_data(index=len(price_files) > 1)
+            else:
+                no_prices_msg = 'На жаль, на разі немає зображень з цінами 🥺'  # Якщо папка price_images порожня
+                answ = await bot.send_message(callback.from_user.id, no_prices_msg, reply_markup=inl_kb)
         case 'more_prices':
             data = await state.get_data()
             index = data['index']
@@ -75,9 +101,21 @@ async def answer(callback: types.CallbackQuery, state):
                 msg += '(Ви проглянули всі)'
                 index = 0
             photo = price_files[index]
-            await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
-            await state.update_data(index=index+1)
-    await callback.message.delete()
+            answ = await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
+            await state.update_data(index=index + 1)
+        case 'test_level_start':
+            await go_handler(callback.from_user.id)
+    leave_msgs = ('price', 'more_prices', 'guest_solo',
+                  'guest_duet', 'guest_group', 'test_level_start',)  # останнє збереже результати test_level_done
+    if prev_call in leave_msgs and back:
+        await callback.message.edit_reply_markup(None)
+    else:
+        await callback.message.delete()
+    await state.update_data(prev_call=call)
+    try:
+        await state.update_data(chat_id=answ.chat.id, msg_id=answ.message_id)
+    except UnboundLocalError:
+        pass
 
 
 @dp.message_handler(state=UserData.name)
@@ -87,18 +125,10 @@ async def process_name(message, state):
     """
     inp_name = message.text.title()
     await state.update_data(name=inp_name)
-    data = await state.get_data()
     await state.finish()
-    await bot.delete_message(data['chat_id'], data['msg_id'])
-    await message.delete()
     # пізніше додати превірку чи є таке ім'я в базі
     # . . .
-    # Створення повідомлення з інлайн-кнопками після успішної авторизації
-    call = 'auth_done'
-    msg, next_calls, back_opt = get_info(call)
-    inl_kb = inl_keyboard(next_calls, back_opt)
-    await message.answer(msg + f'{data["name"]}!', reply_markup=inl_kb)
 
 
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True)
+    executor.start_polling(dispatcher=dp, skip_updates=True, on_startup=commands_list_menu)

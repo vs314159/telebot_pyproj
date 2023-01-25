@@ -1,5 +1,24 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from callbacks import callback_info
+from json import dumps, load
+
+
+questions = load(open('questions.json', 'r', encoding='utf-8'))
+
+
+# SandyGrN's function
+def compose_markup(question: int):
+    """
+    Інлайн-клавіатура для тесту з англійської з кнопками варіантів відповіді
+    """
+    km = InlineKeyboardMarkup(row_width=3)
+    for i in range(len(questions[question]["variants"])):
+        cd = {
+            "question": question,
+            "answer": i
+        }
+        km.insert(InlineKeyboardButton(questions[question]["variants"][i], callback_data=dumps(cd)))
+    return km
 
 
 def inl_keyboard(next_calls: tuple[str] = None, back_opt: str = None) -> InlineKeyboardMarkup:
@@ -17,7 +36,7 @@ def inl_keyboard(next_calls: tuple[str] = None, back_opt: str = None) -> InlineK
                for call, opt in options.items())
     kb = InlineKeyboardMarkup(row_width=1).add(*buttons)
     if back_opt is not None:
-        kb.add(InlineKeyboardButton(text='< Назад', callback_data=back_opt))
+        kb.add(InlineKeyboardButton(text='< Назад', callback_data='<' + back_opt))
     return kb
 
 
