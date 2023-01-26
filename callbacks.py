@@ -90,7 +90,7 @@ callback_info = {
                 'test_level_start': CallbackInfo(btn_name='Почати',
                                                  back_opt='guest',
                                                  ),
-                    'test_level_done': CallbackInfo(msg='Обговорити результати з нашими викладачами 👨‍🏫',
+                    'test_level_done': CallbackInfo(msg=msgs.test_level_done,
                                                     next_calls=('trial',),
                                                     back_opt='guest',
                                                     ),

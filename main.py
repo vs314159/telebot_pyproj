@@ -35,6 +35,8 @@ async def start(message, state):
     data = await state.get_data()
     if data.get('chat_id', None):
         try:
+            # видаляє інлайн кнопки або можна замінити на
+            # видалення попередніх повідомлень з інлайн кнопками
             await bot.edit_message_reply_markup(chat_id=data['chat_id'],
                                                 message_id=data['msg_id'],
                                                 reply_markup=None)
@@ -73,7 +75,7 @@ async def answer(callback: types.CallbackQuery, state):
         msg, next_calls, back_opt = get_info(call)
         inl_kb = inl_keyboard(next_calls, back_opt)
     else:
-        await answer_handler(callback)
+        await answer_handler(callback, state)
         return
     if call not in ('price', 'more_prices', 'test_level_start'):
         answ = await bot.send_message(callback.from_user.id, msg, reply_markup=inl_kb)

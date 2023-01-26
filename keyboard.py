@@ -11,13 +11,14 @@ def compose_markup(question: int):
     """
     Інлайн-клавіатура для тесту з англійської з кнопками варіантів відповіді
     """
-    km = InlineKeyboardMarkup(row_width=3)
+    km = InlineKeyboardMarkup(row_width=2)
     for i in range(len(questions[question]["variants"])):
         cd = {
             "question": question,
             "answer": i
         }
         km.insert(InlineKeyboardButton(questions[question]["variants"][i], callback_data=dumps(cd)))
+    km.insert(InlineKeyboardButton('Завершити тест 🛑', callback_data='guest'))
     return km
 
 
