@@ -41,7 +41,7 @@ async def start(message, state):
         except MessageToEditNotFound:
             pass
     await state.finish()
-    command = message.text[1:]
+    command = message.text.split()[0][1:]
     msg, next_calls, back_opt = get_info(command)
     inl_kb = inl_keyboard(next_calls, back_opt)
     answ = await message.answer(text=msg, reply_markup=inl_kb)
