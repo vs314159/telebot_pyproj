@@ -2,8 +2,8 @@ from aiogram import executor, types
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.utils.exceptions import MessageToEditNotFound
 
-from keyboard import inl_keyboard, get_info
-from quiz import go_handler, answer_handler
+from utils.keyboard import inl_keyboard, get_info
+from quiz.quiz import go_handler, answer_handler
 
 from setting import bot, dp
 from setting import price_files

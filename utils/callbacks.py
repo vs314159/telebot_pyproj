@@ -1,4 +1,4 @@
-from messages import Messages
+from utils.messages import Messages
 
 
 class CallbackInfo:

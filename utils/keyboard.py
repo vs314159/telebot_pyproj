@@ -1,9 +1,8 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from callbacks import callback_info
+from utils.callbacks import callback_info
 from json import dumps, load
 
-
-questions = load(open('questions.json', 'r', encoding='utf-8'))
+from setting import questions
 
 
 # SandyGrN's function

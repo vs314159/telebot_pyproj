@@ -1,11 +1,12 @@
 from aiogram.types import CallbackQuery
 
 from json import loads
-import my_db
 
 from setting import dp, bot
 from setting import questions
-from keyboard import inl_keyboard, get_info, compose_markup
+from utils.keyboard import inl_keyboard, get_info, compose_markup
+
+import quiz.my_db as my_db
 
 levels = ['Elementary', 'Pre-Intermediate', 'Intermediate', 'Upper-Intermediate']
 

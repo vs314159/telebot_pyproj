@@ -1,6 +1,7 @@
 from sqlite3 import connect
+from setting import my_db_file
 
-my_db = connect("my_bot.db")
+my_db = connect(my_db_file)
 cursor = my_db.cursor()
 
 cursor.execute("CREATE TABLE IF NOT EXISTS users (uid INT, current_question INTEGER, questions_passed INTEGER, questions_message INTEGER, in_process INTEGER)")

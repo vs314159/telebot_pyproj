@@ -12,4 +12,5 @@ dp = Dispatcher(bot=bot, storage=storage)
 
 price_files = os.listdir('price_images')
 price_files = tuple(map(lambda x: 'price_images/' + x, price_files))
-questions = load(open('questions.json', 'r', encoding='utf-8'))
+questions = load(open('quiz/questions.json', 'r', encoding='utf-8'))
+my_db_file = "quiz/my_bot.db"
