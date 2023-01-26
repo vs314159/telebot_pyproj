@@ -7,7 +7,7 @@ import os
 load_dotenv()
 
 storage = MemoryStorage()
-bot = Bot(token=os.environ["TOKEN"])
+bot = Bot(token=os.environ["TOKEN"])#, proxy=os.environ['PROXY_URL'])
 dp = Dispatcher(bot=bot, storage=storage)
 
 price_files = os.listdir('price_images')
