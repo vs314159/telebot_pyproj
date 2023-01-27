@@ -7,6 +7,8 @@ from quiz.quiz import start_quiz, continue_quiz
 
 from setting import bot, dp
 from setting import price_files, informative_msgs
+from setting import number_col, balance_col
+from google_integration.num_of_lessons import google_table_df, number_of_lessons_from_sheets
 
 
 class UserData(StatesGroup):
@@ -82,6 +84,10 @@ async def answer_callback(callback: types.CallbackQuery, state):
             #  Очікування ПІ від користувача, після чого
             #  перехід до функції process_name
             await UserData.phone_number.set()
+            try:
+                await state.update_data(chat_id=answ.chat.id, msg_id=answ.message_id)
+            except UnboundLocalError:
+                pass
         case 'student':
             await state.finish()  # користувач не захотів вводити ім'я
         case 'price':
@@ -122,10 +128,52 @@ async def process_phone_number(message, state):
     Обробка введеного користувачем прізвища та імені
     """
     phone_number = message.text
+    data = await state.get_data()
+    if data.get('chat_id', None):
+        try:
+            # видаляє інлайн кнопки або можна замінити на
+            # видалення попередніх повідомлень з інлайн кнопками
+            await bot.edit_message_reply_markup(chat_id=data['chat_id'],
+                                                message_id=data['msg_id'],
+                                                reply_markup=None)
+        except MessageToEditNotFound:
+            pass
     await state.update_data(phone_number=phone_number)
     await state.finish()
-    # пізніше додати превірку чи є такий номер в бд
-    # . . .
+    phone_number = phone_number.replace('-', '')
+    if check_phone_number_format(phone_number):
+        result_msg = number_of_lessons_from_sheets(phone_number,
+                                                   google_table_df,
+                                                   number_col,
+                                                   balance_col)
+        if result_msg is None:
+            msg, next_calls, back_opt = get_info('remains')
+            inl_kb = keyboard(next_calls, back_opt)
+            answ = await bot.send_message(message.from_user.id, msg, reply_markup=inl_kb)
+            await UserData.phone_number.set()
+        else:
+            call = 'remains_result'
+            msg, next_calls, back_opt = get_info(call)
+            msg = result_msg
+            inl_kb = keyboard(next_calls, back_opt)
+            answ = await bot.send_message(message.from_user.id, msg, reply_markup=inl_kb)
+    else:
+        msg, next_calls, back_opt = get_info('remains')
+        inl_kb = keyboard(next_calls, back_opt)
+        answ = await bot.send_message(message.from_user.id, msg, reply_markup=inl_kb)
+        await UserData.phone_number.set()
+    try:
+        await state.update_data(chat_id=answ.chat.id, msg_id=answ.message_id)
+    except UnboundLocalError:
+        pass
+
+
+
+def check_phone_number_format(phone_number):
+    phone_number = phone_number.replace('-', '').replace('+', '')
+    return len(phone_number) == 12 and \
+           phone_number.isnumeric() and \
+           phone_number.startswith('380')
 
 
 if __name__ == "__main__":

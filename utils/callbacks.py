@@ -42,6 +42,9 @@ callback_info = {
                                     btn_name='Лишилось занять 📚',
                                     back_opt='student',
                                     ),
+                'remains_result': CallbackInfo(next_calls=('payment',),
+                                               back_opt='student',
+                                               ),
 
         'guest': CallbackInfo(msg=msgs.guest,
                               btn_name='Хочу навчатись!🤓',
