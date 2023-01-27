@@ -27,3 +27,7 @@ prices = {
             'duet': 2200,
             'group': 1950,
          }
+
+google_table_id = os.environ['GOOGLE_TABLE_ID']
+number_col = 'номер телефону'
+balance_col = 'баланс уроков'
