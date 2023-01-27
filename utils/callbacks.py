@@ -22,8 +22,8 @@ class CallbackInfo:
 msgs = Messages()
 callback_info = {
     'start': CallbackInfo(msg=msgs.start,
-                           next_calls=('student', 'guest')
-                           ),
+                          next_calls=('student', 'guest')
+                          ),
         'student': CallbackInfo(msg=msgs.student,
                                 btn_name='Студент🎓',
                                 next_calls=('feedback', 'payment', 'remains'),

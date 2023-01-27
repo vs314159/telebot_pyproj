@@ -12,5 +12,18 @@ dp = Dispatcher(bot=bot, storage=storage)
 
 price_files = os.listdir('price_images')
 price_files = tuple(map(lambda x: 'price_images/' + x, price_files))
-questions = load(open('quiz/questions.json', 'r', encoding='utf-8'))
-my_db_file = "quiz/my_bot.db"
+quiz_questions = load(open('quiz/questions.json', 'r', encoding='utf-8'))
+my_db_file = 'quiz/my_bot.db'
+informative_msgs = (
+                    'price', 'more_prices', 'guest_solo',
+                    'guest_duet', 'guest_group', 'test_level_start',
+                    )
+levels = [
+          'Elementary', 'Pre-Intermediate',
+          'Intermediate', 'Upper-Intermediate',
+          ]
+prices = {
+            'solo': 3000,
+            'duet': 2200,
+            'group': 1950,
+         }

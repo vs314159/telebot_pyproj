@@ -2,26 +2,26 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from utils.callbacks import callback_info
 from json import dumps, load
 
-from setting import questions
+from setting import quiz_questions
 
 
 # SandyGrN's function
-def compose_markup(question: int):
+def quiz_keyboard(question: int):
     """
     Інлайн-клавіатура для тесту з англійської з кнопками варіантів відповіді
     """
     km = InlineKeyboardMarkup(row_width=2)
-    for i in range(len(questions[question]["variants"])):
+    for i in range(len(quiz_questions[question]["variants"])):
         cd = {
             "question": question,
             "answer": i
         }
-        km.insert(InlineKeyboardButton(questions[question]["variants"][i], callback_data=dumps(cd)))
+        km.insert(InlineKeyboardButton(quiz_questions[question]["variants"][i], callback_data=dumps(cd)))
     km.insert(InlineKeyboardButton('Завершити тест 🛑', callback_data='guest'))
     return km
 
 
-def inl_keyboard(next_calls: tuple[str] = None, back_opt: str = None) -> InlineKeyboardMarkup:
+def keyboard(next_calls: tuple[str] = None, back_opt: str = None) -> InlineKeyboardMarkup:
     """
     Функція створює інлайн-клавіатуру з кнопками, що базуються на next_calls,
     Та кнопкою '< Назад', якщо колбек містить можливість повернутися до

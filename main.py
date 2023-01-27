@@ -2,20 +2,18 @@ from aiogram import executor, types
 from aiogram.dispatcher.filters.state import StatesGroup, State
 from aiogram.utils.exceptions import MessageToEditNotFound
 
-from utils.keyboard import inl_keyboard, get_info
-from quiz.quiz import go_handler, answer_handler
+from utils.keyboard import keyboard, get_info
+from quiz.quiz import start_quiz, continue_quiz
 
 from setting import bot, dp
-from setting import price_files
+from setting import price_files, informative_msgs
 
 
 class UserData(StatesGroup):
     """
     Клас, що необхідний для отримання даних введених у боті користувачем
-    name - прізвище та ім'я
     """
-    name = State()
-    # contacts = State()
+    phone_number = State()
 
 
 async def commands_list_menu(_):
@@ -27,7 +25,7 @@ async def commands_list_menu(_):
 
 
 @dp.message_handler(commands=['start', 'test_level', 'guest_format'])
-async def start(message, state):
+async def command_answer(message, state):
     """
     Обробка основних команд
 
@@ -45,23 +43,23 @@ async def start(message, state):
     await state.finish()
     command = message.text.split()[0][1:]
     msg, next_calls, back_opt = get_info(command)
-    inl_kb = inl_keyboard(next_calls, back_opt)
+    inl_kb = keyboard(next_calls, back_opt)
     answ = await message.answer(text=msg, reply_markup=inl_kb)
-    # Коли користувач натисне ще одну команду - повідомлення,
-    # що надсилалося попередньою командою, позбудеться інлайн кнопок
+    # Коли користувач натисне ще одну команду - попереднє повідомлення,
+    # що містило інлайн кнопки
     await state.update_data(chat_id=answ.chat.id, msg_id=answ.message_id)
 
 
 @dp.message_handler()
 async def delete_user_msg(message):
     """
-    Видаляємо всі повідомлення, надіслані користувачем
+    Видаляє всі повідомлення, надіслані користувачем
     """
     await message.delete()
 
 
 @dp.callback_query_handler(state='*')
-async def answer(callback: types.CallbackQuery, state):
+async def answer_callback(callback: types.CallbackQuery, state):
     """
     Функція, що реагує на колбеки - виводить повідомлення з інлайн-кнопками,
     натискання яких створює нові колбеки, які ця функція знову оброблює
@@ -73,9 +71,9 @@ async def answer(callback: types.CallbackQuery, state):
         back = call.startswith('<')
         call = call.lstrip('<')
         msg, next_calls, back_opt = get_info(call)
-        inl_kb = inl_keyboard(next_calls, back_opt)
+        inl_kb = keyboard(next_calls, back_opt)
     else:
-        await answer_handler(callback, state)
+        await continue_quiz(callback, state)
         return
     if call not in ('price', 'more_prices', 'test_level_start'):
         answ = await bot.send_message(callback.from_user.id, msg, reply_markup=inl_kb)
@@ -83,12 +81,12 @@ async def answer(callback: types.CallbackQuery, state):
         case 'remains':
             #  Очікування ПІ від користувача, після чого
             #  перехід до функції process_name
-            await UserData.name.set()
+            await UserData.phone_number.set()
         case 'student':
             await state.finish()  # користувач не захотів вводити ім'я
         case 'price':
             if len(price_files) in (0, 1):
-                inl_kb = inl_keyboard(None, back_opt)  # Прибираємо кнопку '> Далі'
+                inl_kb = keyboard(None, back_opt)  # Прибираємо кнопку '> Далі'
             if len(price_files) > 0:
                 photo = price_files[0]
                 answ = await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
@@ -106,10 +104,8 @@ async def answer(callback: types.CallbackQuery, state):
             answ = await bot.send_photo(callback.from_user.id, photo=open(photo, 'rb'), caption=msg, reply_markup=inl_kb)
             await state.update_data(index=index + 1)
         case 'test_level_start':
-            await go_handler(callback.from_user.id)
-    leave_msgs = ('price', 'more_prices', 'guest_solo',
-                  'guest_duet', 'guest_group', 'test_level_start',)  # останнє збереже результати test_level_done
-    if prev_call in leave_msgs and back:
+            await start_quiz(callback.from_user.id)
+    if prev_call in informative_msgs and back:
         await callback.message.edit_reply_markup(None)
     else:
         await callback.message.delete()
@@ -120,15 +116,15 @@ async def answer(callback: types.CallbackQuery, state):
         pass
 
 
-@dp.message_handler(state=UserData.name)
-async def process_name(message, state):
+@dp.message_handler(state=UserData.phone_number)
+async def process_phone_number(message, state):
     """
     Обробка введеного користувачем прізвища та імені
     """
-    inp_name = message.text.title()
-    await state.update_data(name=inp_name)
+    phone_number = message.text
+    await state.update_data(phone_number=phone_number)
     await state.finish()
-    # пізніше додати превірку чи є таке ім'я в базі
+    # пізніше додати превірку чи є такий номер в бд
     # . . .
 
 
